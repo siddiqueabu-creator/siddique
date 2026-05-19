@@ -1,14 +1,11 @@
 from dataclasses import dataclass
-from typing import Dict
-
 import pandas as pd
 import plotly.express as px
 import streamlit as st
-from PIL import Image
 
-# =====================================================
+# =========================================================
 # PAGE CONFIG
-# =====================================================
+# =========================================================
 
 st.set_page_config(
     page_title="Enterprise Prompt Engineering Studio",
@@ -16,46 +13,77 @@ st.set_page_config(
     layout="wide"
 )
 
-# =====================================================
+# =========================================================
+# DARK THEME STYLE
+# =========================================================
+
+st.markdown("""
+<style>
+
+.main {
+    background-color: #0b1020;
+    color: white;
+}
+
+.stApp {
+    background-color: #0b1020;
+    color: white;
+}
+
+h1, h2, h3, h4, h5, h6, p, label {
+    color: white !important;
+}
+
+section[data-testid="stSidebar"] {
+    background-color: #1b1f2f;
+}
+
+.stButton>button {
+    background-color: #ff4b4b;
+    color: white;
+    border-radius: 8px;
+    border: none;
+    padding: 10px 20px;
+}
+
+.stMetric {
+    background-color: #111827;
+    padding: 15px;
+    border-radius: 10px;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+# =========================================================
 # CONFIG
-# =====================================================
+# =========================================================
 
 @dataclass
 class GenConfig:
+    max_new_tokens: int = 180
     temperature: float = 0.2
-    max_tokens: int = 150
+    top_p: float = 0.9
 
-# =====================================================
+# =========================================================
 # SIMPLE AI ENGINE
-# =====================================================
+# =========================================================
 
-def generate(prompt: str):
+def generate(prompt):
 
     text = prompt.lower()
 
     if "charged twice" in text:
 
         return """
-### Billing Issue Detected
+### Billing Analysis
 
-Priority: High
-
-Recommended Actions:
-- Verify invoice records
-- Reconcile payment gateway
-- Process refund if duplicate confirmed
-- Notify customer professionally
-"""
-
-    elif "security" in text:
-
-        return """
-### Security Alert
-
-Recommendations:
-- Review login activity
-- Reset compromised credentials
-- Escalate to SOC team
+- Issue Type: Duplicate Billing
+- Priority: High
+- Recommended Action:
+    - Verify invoice
+    - Reconcile payment
+    - Process refund
 """
 
     elif "risk" in text:
@@ -63,8 +91,8 @@ Recommendations:
         return """
 ### Business Risk Analysis
 
-- Revenue exposure detected
-- Customer churn increasing
+- Revenue risk identified
+- Churn increasing
 - Recommend retention strategy
 """
 
@@ -73,21 +101,20 @@ Recommendations:
         return """
 ### Enterprise AI Response
 
-Task analyzed successfully.
-Workflow recommendation generated.
+Workflow recommendation generated successfully.
 """
 
-# =====================================================
+# =========================================================
 # SECURITY FILTER
-# =====================================================
+# =========================================================
 
-def security_filter(text: str) -> Dict:
+def security_filter(text):
 
     patterns = [
         "ignore previous",
         "system prompt",
-        "credentials",
-        "secret"
+        "secret",
+        "credentials"
     ]
 
     flags = [
@@ -100,11 +127,11 @@ def security_filter(text: str) -> Dict:
         "allowed": len(flags) == 0
     }
 
-# =====================================================
+# =========================================================
 # CALCULATOR
-# =====================================================
+# =========================================================
 
-def calculator(expression: str):
+def calculator(expression):
 
     try:
 
@@ -128,9 +155,9 @@ def calculator(expression: str):
 
         return f"Error: {exc}"
 
-# =====================================================
+# =========================================================
 # SIDEBAR
-# =====================================================
+# =========================================================
 
 st.sidebar.title("Enterprise AI Studio")
 
@@ -146,6 +173,14 @@ page = st.sidebar.radio(
     ]
 )
 
+model_name = st.sidebar.selectbox(
+    "Model",
+    [
+        "google/flan-t5-base",
+        "google/flan-t5-small"
+    ]
+)
+
 temperature = st.sidebar.slider(
     "Temperature",
     0.0,
@@ -154,32 +189,42 @@ temperature = st.sidebar.slider(
     0.05
 )
 
+top_p = st.sidebar.slider(
+    "Top-p",
+    0.1,
+    1.0,
+    0.9,
+    0.05
+)
+
 max_tokens = st.sidebar.slider(
-    "Max Tokens",
+    "Max new tokens",
     32,
     512,
-    150,
+    180,
     16
 )
 
 cfg = GenConfig(
+    max_new_tokens=max_tokens,
     temperature=temperature,
-    max_tokens=max_tokens
+    top_p=top_p
 )
 
-# =====================================================
+# =========================================================
 # TITLE
-# =====================================================
+# =========================================================
 
 st.title("Enterprise Prompt Engineering Studio")
 
 st.caption(
-    "Lightweight Enterprise AI Demo"
+    "Runtime: cpu | Open-source Hugging Face models | "
+    "RAG + agents + multimodal workflows"
 )
 
-# =====================================================
+# =========================================================
 # PLAYGROUND
-# =====================================================
+# =========================================================
 
 if page == "Playground":
 
@@ -226,7 +271,7 @@ if page == "Playground":
 
         prompt = (
             "Example: Duplicate charge -> Billing issue.\n"
-            "Example: Login failure -> Access issue.\n"
+            "Example: Login issue -> Access issue.\n"
             f"Task: {user_task}"
         )
 
@@ -243,9 +288,9 @@ if page == "Playground":
 
         st.write(generate(prompt))
 
-# =====================================================
+# =========================================================
 # RAG CHATBOT
-# =====================================================
+# =========================================================
 
 elif page == "RAG Chatbot":
 
@@ -256,28 +301,24 @@ elif page == "RAG Chatbot":
         "How should duplicate billing be handled?"
     )
 
-    knowledge_base = """
+    if st.button("Retrieve and Answer"):
+
+        st.info("""
 AI Policy:
-Customer data must remain secure.
+Customer PII must remain secure.
 
 Telecom Manual:
 Duplicate billing requires:
 - invoice verification
-- payment reconciliation
+- reconciliation
 - escalation within 4 hours
-"""
+""")
 
-    if st.button("Retrieve and Answer"):
+        st.write(generate(question))
 
-        st.info(knowledge_base)
-
-        answer = generate(question)
-
-        st.write(answer)
-
-# =====================================================
+# =========================================================
 # AI AGENT
-# =====================================================
+# =========================================================
 
 elif page == "AI Agent":
 
@@ -286,46 +327,50 @@ elif page == "AI Agent":
     )
 
     accounts = st.number_input(
-        "Enterprise Accounts",
+        "Enterprise accounts",
         100,
         100000,
-        1200
+        1200,
+        step=100
     )
 
     churn = st.slider(
-        "Quarterly Churn Rate",
+        "Quarterly churn rate",
         0.0,
         0.5,
-        0.08
+        0.08,
+        0.01
     )
 
     acv = st.number_input(
-        "Average Contract Value",
+        "Average contract value",
         1000,
         1000000,
-        42000
+        42000,
+        step=1000
     )
 
-    if st.button("Run Agent"):
+    if st.button(
+        "Run agent",
+        type="primary"
+    ):
 
         arr = calculator(
             f"{accounts} * {churn} * {acv}"
         )
 
         st.metric(
-            "ARR At Risk",
+            "ARR at Risk",
             f"${float(arr):,.0f}"
         )
 
-        result = generate(
-            "business risk analysis"
+        st.write(
+            generate("business risk")
         )
 
-        st.write(result)
-
-# =====================================================
+# =========================================================
 # MULTIMODAL
-# =====================================================
+# =========================================================
 
 elif page == "Multimodal":
 
@@ -340,10 +385,8 @@ elif page == "Multimodal":
 
     if uploaded:
 
-        image = Image.open(uploaded)
-
         st.image(
-            image,
+            uploaded,
             use_container_width=True
         )
 
@@ -351,9 +394,9 @@ elif page == "Multimodal":
             "Image uploaded successfully"
         )
 
-# =====================================================
+# =========================================================
 # DASHBOARD
-# =====================================================
+# =========================================================
 
 elif page == "Dashboard":
 
@@ -420,9 +463,9 @@ elif page == "Dashboard":
         use_container_width=True
     )
 
-# =====================================================
+# =========================================================
 # SECURITY
-# =====================================================
+# =========================================================
 
 else:
 
