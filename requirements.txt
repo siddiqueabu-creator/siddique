@@ -1,13 +1,8 @@
-streamlit
+streamlit==1.32.2
+transformers==4.38.2
 torch
-transformers
+sentencepiece
 accelerate
-sentence-transformers
-langchain
-langchain-community
-langchain-core
-langchain-text-splitters
-faiss-cpu==1.7.4
 pandas
 plotly
 pillow
